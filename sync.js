@@ -3,10 +3,15 @@ const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
 // Prende le chiavi dalla cassaforte di GitHub
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
 const s3 = new S3Client({
-  region: "auto",
+  region: "us-east-1", // FIX 1: Inganniamo l'SDK con una region standard AWS
   endpoint: `https://${process.env.CF_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: { accessKeyId: process.env.R2_ACCESS_KEY, secretAccessKey: process.env.R2_SECRET_KEY },
+  credentials: { 
+    accessKeyId: process.env.R2_ACCESS_KEY, 
+    secretAccessKey: process.env.R2_SECRET_KEY 
+  },
+  forcePathStyle: true // FIX 2: Impediamo all'SDK di storpiare l'URL di Cloudflare
 });
 
 async function run() {
