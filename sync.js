@@ -21,6 +21,10 @@ async function run() {
 
   // 1. Indice leggero
   const indexData = tracks.map(t => ({ id: t.id, title: t.title, artist: t.artist, album: t.album }));
+  console.log("DEBUG INFO:");
+  console.log("1. Account ID letto:", process.env.CF_ACCOUNT_ID ? "PRESENTE" : "VUOTO");
+  console.log("2. Bucket Name letto:", process.env.R2_BUCKET_NAME);
+  console.log("3. Access Key letta:", process.env.R2_ACCESS_KEY ? "PRESENTE" : "VUOTA");
   await upload("tracks_index.json", indexData);
   console.log("Indice caricato!");
 
