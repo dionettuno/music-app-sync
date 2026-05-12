@@ -1,0 +1,25 @@
+name: Sincronizza Supabase con Cloudflare R2
+
+# Questo crea il "Pulsante" su GitHub per lanciarlo a mano
+on:
+  workflow_dispatch:
+
+jobs:
+  aggiorna-r2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prendi i file dal magazzino
+        uses: actions/checkout@v4
+
+      - name: Installa i pacchetti necessari (Supabase e AWS)
+        run: npm install @supabase/supabase-js @aws-sdk/client-s3
+
+      - name: Lancia lo script magico
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          R2_ACCESS_KEY: ${{ secrets.R2_ACCESS_KEY }}
+          R2_SECRET_KEY: ${{ secrets.R2_SECRET_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+        run: node sync.js
