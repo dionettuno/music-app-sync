@@ -1,6 +1,5 @@
 name: Sincronizza Supabase con Cloudflare R2
 
-# Questo crea il "Pulsante" su GitHub per lanciarlo a mano
 on:
   workflow_dispatch:
 
@@ -10,6 +9,11 @@ jobs:
     steps:
       - name: Prendi i file dal magazzino
         uses: actions/checkout@v4
+
+      - name: Imposta Node.js 22 (Risolve errore WebSocket)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
       - name: Installa i pacchetti necessari (Supabase e AWS)
         run: npm install @supabase/supabase-js @aws-sdk/client-s3
