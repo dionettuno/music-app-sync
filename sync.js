@@ -1,17 +1,20 @@
 const { createClient } = require('@supabase/supabase-js');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
-// Prende le chiavi dalla cassaforte di GitHub
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+// Il .trim() distrugge gli spazi vuoti e gli "A capo" invisibili copiati per sbaglio
+const supabase = createClient(
+  process.env.SUPABASE_URL.trim(), 
+  process.env.SUPABASE_KEY.trim()
+);
 
 const s3 = new S3Client({
-  region: "us-east-1", // FIX 1: Inganniamo l'SDK con una region standard AWS
-  endpoint: `https://${process.env.CF_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  region: "us-east-1",
+  endpoint: `https://${process.env.CF_ACCOUNT_ID.trim()}.r2.cloudflarestorage.com`,
   credentials: { 
-    accessKeyId: process.env.R2_ACCESS_KEY, 
-    secretAccessKey: process.env.R2_SECRET_KEY 
+    accessKeyId: process.env.R2_ACCESS_KEY.trim(), 
+    secretAccessKey: process.env.R2_SECRET_KEY.trim() 
   },
-  forcePathStyle: true // FIX 2: Impediamo all'SDK di storpiare l'URL di Cloudflare
+  forcePathStyle: true
 });
 
 async function run() {
@@ -19,16 +22,10 @@ async function run() {
   const { data: tracks, error } = await supabase.from('tracks').select('*');
   if (error) throw error;
 
-  // 1. Indice leggero
   const indexData = tracks.map(t => ({ id: t.id, title: t.title, artist: t.artist, album: t.album }));
-  console.log("DEBUG INFO:");
-  console.log("1. Account ID letto:", process.env.CF_ACCOUNT_ID ? "PRESENTE" : "VUOTO");
-  console.log("2. Bucket Name letto:", process.env.R2_BUCKET_NAME);
-  console.log("3. Access Key letta:", process.env.R2_ACCESS_KEY ? "PRESENTE" : "VUOTA");
   await upload("tracks_index.json", indexData);
   console.log("Indice caricato!");
 
-  // 2. File completi
   for (const track of tracks) {
     const fileName = `tracks/${track.title.toLowerCase().replace(/ /g, "_")}.json`;
     const detailedData = {
@@ -44,7 +41,10 @@ async function run() {
 
 async function upload(key, body) {
   await s3.send(new PutObjectCommand({
-    Bucket: process.env.R2_BUCKET_NAME, Key: key, Body: JSON.stringify(body), ContentType: "application/json"
+    Bucket: process.env.R2_BUCKET_NAME.trim(), 
+    Key: key, 
+    Body: JSON.stringify(body), 
+    ContentType: "application/json"
   }));
 }
 
