@@ -16,8 +16,8 @@ const s3 = new S3Client({
   forcePathStyle: true
 });
 
-// INSERISCI QUI L'URL DELLA TUA WORKER (assicurati di lasciare la "/" alla fine)
-const PROXY_URL = "https://INSERISCI-QUI-LA-TUA-WORKER.workers.dev/";
+// INSERISCI QUI L'URL DELLA TUA WORKER
+const PROXY_URL = "https://music-proxy.vector-devv.workers.dev/";
 
 async function run() {
   console.log("Sincronizzazione iniziata...");
