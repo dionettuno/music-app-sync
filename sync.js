@@ -16,12 +16,15 @@ const s3 = new S3Client({
   forcePathStyle: true
 });
 
+// INSERISCI QUI L'URL DELLA TUA WORKER (assicurati di lasciare la "/" alla fine)
+const PROXY_URL = "https://INSERISCI-QUI-LA-TUA-WORKER.workers.dev/";
+
 async function run() {
   console.log("Sincronizzazione iniziata...");
   const { data: tracks, error } = await supabase.from('tracks').select('*');
   if (error) throw error;
 
-  // --- MODIFICA QUI: L'indice ora contiene di nuovo tag, language e image_url formattato ---
+  // --- SOSTITUIAMO STATICALLY CON IL TUO PROXY PERSONALE ---
   const indexData = tracks.map(t => ({ 
     id: t.id, 
     title: t.title, 
@@ -29,7 +32,7 @@ async function run() {
     album: t.album,
     tag: t.tag,
     language: t.language,
-    image_url: t.image_url ? t.image_url.replace("https://", "https://cdn.statically.io/img/") : null
+    image_url: t.image_url ? t.image_url.replace("https://", PROXY_URL) : null
   }));
   
   await upload("tracks_index.json", indexData);
@@ -39,9 +42,10 @@ async function run() {
     const fileName = `tracks/${track.title.toLowerCase().replace(/ /g, "_")}.json`;
     const detailedData = {
       ...track,
-      audio_url: track.audio_url ? track.audio_url.replace("https://", "https://cdn.statically.io/gh/") : null,
-      image_url: track.image_url ? track.image_url.replace("https://", "https://cdn.statically.io/img/") : null,
-      artist_img_url: track.artist_img_url ? track.artist_img_url.replace("https://", "https://cdn.statically.io/img/") : null,
+      // Aggiorniamo anche i file completi con il Proxy
+      audio_url: track.audio_url ? track.audio_url.replace("https://", PROXY_URL) : null,
+      image_url: track.image_url ? track.image_url.replace("https://", PROXY_URL) : null,
+      artist_img_url: track.artist_img_url ? track.artist_img_url.replace("https://", PROXY_URL) : null,
     };
     await upload(fileName, detailedData);
   }
