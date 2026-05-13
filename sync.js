@@ -16,36 +16,50 @@ const s3 = new S3Client({
   forcePathStyle: true
 });
 
-// INSERISCI QUI L'URL DELLA TUA WORKER
-const PROXY_URL = "https://music-proxy.vector-devv.workers.dev/";
+// Costanti architetturali
+const R2_URL = "pub-bbf8dba715c84578baba8379591abcf0.r2.dev/";
+const IMAGE_CDN = "https://images.weserv.nl/?url=";
 
 async function run() {
   console.log("Sincronizzazione iniziata...");
   const { data: tracks, error } = await supabase.from('tracks').select('*');
   if (error) throw error;
 
-  // --- SOSTITUIAMO STATICALLY CON IL TUO PROXY PERSONALE ---
-  const indexData = tracks.map(t => ({ 
-    id: t.id, 
-    title: t.title, 
-    artist: t.artist, 
-    album: t.album,
-    tag: t.tag,
-    language: t.language,
-    image_url: t.image_url ? t.image_url.replace("https://", PROXY_URL) : null
-  }));
+  // 1. Creazione dell'indice leggero
+  const indexData = tracks.map(t => {
+    // Estraiamo il nome del file immagine per agganciarlo alla CDN
+    let imgPath = t.image_url ? t.image_url.split('/').pop() : null;
+    
+    return { 
+      id: t.id, 
+      title: t.title, 
+      artist: t.artist, 
+      album: t.album,
+      tag: t.tag,
+      language: t.language,
+      // Le immagini passano da Weserv CDN: compresse a 400px e in WebP
+      image_url: imgPath ? `${IMAGE_CDN}${R2_URL}images/${imgPath}&w=400&output=webp` : null
+    };
+  });
   
   await upload("tracks_index.json", indexData);
   console.log("Indice caricato!");
 
+  // 2. Creazione dei file JSON dettagliati
   for (const track of tracks) {
     const fileName = `tracks/${track.title.toLowerCase().replace(/ /g, "_")}.json`;
+    
+    let imgPath = track.image_url ? track.image_url.split('/').pop() : null;
+    let artistImgPath = track.artist_img_url ? track.artist_img_url.split('/').pop() : null;
+
     const detailedData = {
       ...track,
-      // Aggiorniamo anche i file completi con il Proxy
-      audio_url: track.audio_url ? track.audio_url.replace("https://", PROXY_URL) : null,
-      image_url: track.image_url ? track.image_url.replace("https://", PROXY_URL) : null,
-      artist_img_url: track.artist_img_url ? track.artist_img_url.replace("https://", PROXY_URL) : null,
+      // Audio prelevato in modo diretto e pulito da R2
+      audio_url: track.audio_url ? `https://${R2_URL}audio/${track.audio_url.split('/').pop()}` : null,
+      
+      // Immagini servite e ridimensionate dalla CDN Weserv
+      image_url: imgPath ? `${IMAGE_CDN}${R2_URL}images/${imgPath}&w=400&output=webp` : null,
+      artist_img_url: artistImgPath ? `${IMAGE_CDN}${R2_URL}images/${artistImgPath}&w=400&output=webp` : null,
     };
     await upload(fileName, detailedData);
   }
