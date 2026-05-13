@@ -1,7 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
-// Il .trim() distrugge gli spazi vuoti e gli "A capo" invisibili copiati per sbaglio
 const supabase = createClient(
   process.env.SUPABASE_URL.trim(), 
   process.env.SUPABASE_KEY.trim()
@@ -22,7 +21,17 @@ async function run() {
   const { data: tracks, error } = await supabase.from('tracks').select('*');
   if (error) throw error;
 
-  const indexData = tracks.map(t => ({ id: t.id, title: t.title, artist: t.artist, album: t.album }));
+  // --- MODIFICA QUI: L'indice ora contiene di nuovo tag, language e image_url formattato ---
+  const indexData = tracks.map(t => ({ 
+    id: t.id, 
+    title: t.title, 
+    artist: t.artist, 
+    album: t.album,
+    tag: t.tag,
+    language: t.language,
+    image_url: t.image_url ? t.image_url.replace("https://", "https://cdn.statically.io/img/") : null
+  }));
+  
   await upload("tracks_index.json", indexData);
   console.log("Indice caricato!");
 
