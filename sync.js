@@ -25,11 +25,11 @@ async function run() {
   const { data: tracks, error } = await supabase.from('tracks').select('*');
   if (error) throw error;
 
-  // 1. Creazione dell'indice leggero (ORA CON L'ARTISTA)
+  // 1. Creazione dell'indice leggero
   const indexData = tracks.map(t => {
-    let imgPath = t.image_url ? t.image_url.split('/').pop() : null;
-    // AGGIUNTO: Estrazione del nome file dell'artista
-    let artistImgPath = t.artist_img_url ? t.artist_img_url.split('/').pop() : null; 
+    // Estraiamo in modo chirurgico SOLO il nome del file (es: "foto.jpg")
+    let imgFileName = t.image_url ? t.image_url.split('/').pop() : null;
+    let artistImgFileName = t.artist_img_url ? t.artist_img_url.split('/').pop() : null; 
     
     return { 
       id: t.id, 
@@ -38,9 +38,9 @@ async function run() {
       album: t.album,
       tag: t.tag,
       language: t.language,
-      image_url: imgPath ? `${IMAGE_CDN}${R2_URL}images/${imgPath}&w=400&output=webp` : null,
-      // AGGIUNTO: Inserimento nell'indice
-      artist_img_url: artistImgPath ? `${IMAGE_CDN}${R2_URL}images/${artistImgPath}&w=400&output=webp` : null 
+      // RICOSTRUZIONE PERCORSI: Inseriamo a mano /images/albums/ e /images/artists/
+      image_url: imgFileName ? `${IMAGE_CDN}${R2_URL}images/albums/${imgFileName}&w=400&output=webp` : null,
+      artist_img_url: artistImgFileName ? `${IMAGE_CDN}${R2_URL}images/artists/${artistImgFileName}&w=400&output=webp` : null 
     };
   });
   
@@ -51,18 +51,22 @@ async function run() {
   for (const track of tracks) {
     const fileName = `tracks/${track.title.toLowerCase().replace(/ /g, "_")}.json`;
     
-    let imgPath = track.image_url ? track.image_url.split('/').pop() : null;
-    let artistImgPath = track.artist_img_url ? track.artist_img_url.split('/').pop() : null;
+    let imgFileName = track.image_url ? track.image_url.split('/').pop() : null;
+    let artistImgFileName = track.artist_img_url ? track.artist_img_url.split('/').pop() : null;
+    let audioFileName = track.audio_url ? track.audio_url.split('/').pop() : null;
 
     const detailedData = {
       ...track,
-      audio_url: track.audio_url ? `https://${R2_URL}audio/${track.audio_url.split('/').pop()}` : null,
-      image_url: imgPath ? `${IMAGE_CDN}${R2_URL}images/${imgPath}&w=400&output=webp` : null,
-      artist_img_url: artistImgPath ? `${IMAGE_CDN}${R2_URL}images/${artistImgPath}&w=400&output=webp` : null,
+      // Audio prelevato dalla cartella audio/ di R2 (se li tieni sfusi, togli "audio/")
+      audio_url: audioFileName ? `https://${R2_URL}audio/${audioFileName}` : null,
+      
+      // Immagini servite dalla CDN con i percorsi delle sottocartelle esatti
+      image_url: imgFileName ? `${IMAGE_CDN}${R2_URL}images/albums/${imgFileName}&w=400&output=webp` : null,
+      artist_img_url: artistImgFileName ? `${IMAGE_CDN}${R2_URL}images/artists/${artistImgFileName}&w=400&output=webp` : null,
     };
     await upload(fileName, detailedData);
   }
-  console.log("Fatto! Tutto su Cloudflare.");
+  console.log("Fatto! Tutto su Cloudflare con i percorsi corretti.");
 }
 
 async function upload(key, body) {
