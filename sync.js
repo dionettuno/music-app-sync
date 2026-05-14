@@ -25,10 +25,11 @@ async function run() {
   const { data: tracks, error } = await supabase.from('tracks').select('*');
   if (error) throw error;
 
-  // 1. Creazione dell'indice leggero
+  // 1. Creazione dell'indice leggero (ORA CON L'ARTISTA)
   const indexData = tracks.map(t => {
-    // Estraiamo il nome del file immagine per agganciarlo alla CDN
     let imgPath = t.image_url ? t.image_url.split('/').pop() : null;
+    // AGGIUNTO: Estrazione del nome file dell'artista
+    let artistImgPath = t.artist_img_url ? t.artist_img_url.split('/').pop() : null; 
     
     return { 
       id: t.id, 
@@ -37,8 +38,9 @@ async function run() {
       album: t.album,
       tag: t.tag,
       language: t.language,
-      // Le immagini passano da Weserv CDN: compresse a 400px e in WebP
-      image_url: imgPath ? `${IMAGE_CDN}${R2_URL}images/${imgPath}&w=400&output=webp` : null
+      image_url: imgPath ? `${IMAGE_CDN}${R2_URL}images/${imgPath}&w=400&output=webp` : null,
+      // AGGIUNTO: Inserimento nell'indice
+      artist_img_url: artistImgPath ? `${IMAGE_CDN}${R2_URL}images/${artistImgPath}&w=400&output=webp` : null 
     };
   });
   
@@ -54,10 +56,7 @@ async function run() {
 
     const detailedData = {
       ...track,
-      // Audio prelevato in modo diretto e pulito da R2
       audio_url: track.audio_url ? `https://${R2_URL}audio/${track.audio_url.split('/').pop()}` : null,
-      
-      // Immagini servite e ridimensionate dalla CDN Weserv
       image_url: imgPath ? `${IMAGE_CDN}${R2_URL}images/${imgPath}&w=400&output=webp` : null,
       artist_img_url: artistImgPath ? `${IMAGE_CDN}${R2_URL}images/${artistImgPath}&w=400&output=webp` : null,
     };
